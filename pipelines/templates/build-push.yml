@@ -1,0 +1,33 @@
+parameters:
+  - name: imageName
+    type: string
+  - name: dockerfilePath
+    type: string
+  - name: buildContext
+    type: string
+  - name: acrLoginServer
+    type: string
+  - name: imageTag
+    type: string
+
+steps:
+  - task: Docker@2
+    displayName: "Build ${{ parameters.imageName }}"
+    inputs:
+      command: build
+      dockerfile: ${{ parameters.dockerfilePath }}
+      buildContext: ${{ parameters.buildContext }}
+      repository: ${{ parameters.acrLoginServer }}/${{ parameters.imageName }}
+      tags: |
+        ${{ parameters.imageTag }}
+        latest
+
+  - task: Docker@2
+    displayName: "Push ${{ parameters.imageName }}"
+    inputs:
+      command: push
+      containerRegistry: $(acrServiceConnection)
+      repository: ${{ parameters.acrLoginServer }}/${{ parameters.imageName }}
+      tags: |
+        ${{ parameters.imageTag }}
+        latest

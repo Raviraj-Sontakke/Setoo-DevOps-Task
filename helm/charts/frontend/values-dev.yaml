@@ -1,0 +1,11 @@
+replicaCount: 1
+
+image:
+  repository: ravirajacr.azurecr.io/frontend
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 3
+
+ingress:
+  host: app-dev.raviraj.local

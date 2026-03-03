@@ -1,0 +1,11 @@
+apiVersion: v2
+name: airflow
+description: Apache Airflow deployment on AKS
+type: application
+version: 0.1.0
+appVersion: "2.10.3"
+
+dependencies:
+  - name: airflow
+    version: "1.15.0"
+    repository: "https://airflow.apache.org"

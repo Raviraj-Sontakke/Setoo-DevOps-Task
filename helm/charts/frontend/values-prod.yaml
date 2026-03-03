@@ -1,0 +1,23 @@
+replicaCount: 3
+
+image:
+  repository: ravirajacr.azurecr.io/frontend
+
+autoscaling:
+  minReplicas: 3
+  maxReplicas: 15
+
+ingress:
+  host: app.raviraj.io
+  tls:
+    - secretName: app-tls
+      hosts:
+        - app.raviraj.io
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi

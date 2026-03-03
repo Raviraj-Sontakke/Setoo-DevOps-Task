@@ -1,0 +1,18 @@
+airflow:
+  webserver:
+    replicas: 2
+
+  scheduler:
+    replicas: 2
+
+  workers:
+    replicas: 4
+    autoscaling:
+      maxReplicas: 16
+
+  ingress:
+    web:
+      host: airflow.raviraj.io
+      tls:
+        enabled: true
+        secretName: airflow-tls

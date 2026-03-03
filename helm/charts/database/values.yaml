@@ -1,0 +1,21 @@
+image:
+  repository: ravirajacr.azurecr.io/database
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  port: 5432
+
+storage:
+  size: 10Gi
+  storageClass: managed-premium
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+existingSecret: "database-secrets"

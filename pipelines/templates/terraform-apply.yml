@@ -1,0 +1,45 @@
+parameters:
+  - name: environment
+    type: string
+  - name: workingDirectory
+    type: string
+  - name: planOnly
+    type: boolean
+    default: false
+
+steps:
+  - task: TerraformInstaller@1
+    displayName: "Install Terraform"
+    inputs:
+      terraformVersion: "1.6.6"
+
+  - task: TerraformTaskV4@4
+    displayName: "Terraform Init (${{ parameters.environment }})"
+    inputs:
+      provider: azurerm
+      command: init
+      workingDirectory: ${{ parameters.workingDirectory }}
+      backendServiceArm: $(azureServiceConnection)
+      backendAzureRmResourceGroupName: raviraj-rg-shared
+      backendAzureRmStorageAccountName: ravirajstoragestate
+      backendAzureRmContainerName: tfstate
+      backendAzureRmKey: ${{ parameters.environment }}/terraform.tfstate
+
+  - task: TerraformTaskV4@4
+    displayName: "Terraform Plan (${{ parameters.environment }})"
+    inputs:
+      provider: azurerm
+      command: plan
+      workingDirectory: ${{ parameters.workingDirectory }}
+      environmentServiceNameAzureRM: $(azureServiceConnection)
+      commandOptions: "-out=tfplan"
+
+  - ${{ if not parameters.planOnly }}:
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Apply (${{ parameters.environment }})"
+      inputs:
+        provider: azurerm
+        command: apply
+        workingDirectory: ${{ parameters.workingDirectory }}
+        environmentServiceNameAzureRM: $(azureServiceConnection)
+        commandOptions: "tfplan"

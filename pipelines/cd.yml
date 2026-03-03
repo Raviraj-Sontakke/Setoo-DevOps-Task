@@ -1,0 +1,154 @@
+trigger: none
+
+resources:
+  pipelines:
+    - pipeline: ci
+      source: raviraj-ci
+      trigger:
+        branches:
+          include:
+            - main
+
+variables:
+  imageTag: $(resources.pipeline.ci.sourceCommit)
+  acrLoginServer: ravirajacr.azurecr.io
+  azureServiceConnection: raviraj-azure-connection
+  aksServiceConnection: raviraj-aks-connection
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: DeployDev
+    displayName: "Deploy to Dev"
+    variables:
+      environment: dev
+      namespace: app
+    jobs:
+      - deployment: DeployAppDev
+        displayName: "Deploy 3-tier app (dev)"
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/database
+                    releaseName: database
+                    namespace: $(namespace)
+                    valuesFile: helm/charts/database/values.yaml
+                    environment: $(environment)
+
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/backend
+                    releaseName: backend
+                    namespace: $(namespace)
+                    valuesFile: helm/charts/backend/values-dev.yaml
+                    overrideValues: "image.tag=$(imageTag)"
+                    environment: $(environment)
+
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/frontend
+                    releaseName: frontend
+                    namespace: $(namespace)
+                    valuesFile: helm/charts/frontend/values-dev.yaml
+                    overrideValues: "image.tag=$(imageTag)"
+                    environment: $(environment)
+
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/airflow
+                    releaseName: airflow
+                    namespace: airflow
+                    valuesFile: helm/charts/airflow/values.yaml
+                    environment: $(environment)
+
+  - stage: DeployStage
+    displayName: "Deploy to Stage"
+    dependsOn: DeployDev
+    condition: succeeded()
+    variables:
+      environment: stage
+      namespace: app
+    jobs:
+      - deployment: DeployAppStage
+        displayName: "Deploy 3-tier app (stage)"
+        environment: stage
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/database
+                    releaseName: database
+                    namespace: $(namespace)
+                    environment: $(environment)
+
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/backend
+                    releaseName: backend
+                    namespace: $(namespace)
+                    overrideValues: "image.tag=$(imageTag)"
+                    environment: $(environment)
+
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/frontend
+                    releaseName: frontend
+                    namespace: $(namespace)
+                    overrideValues: "image.tag=$(imageTag)"
+                    environment: $(environment)
+
+  - stage: DeployProd
+    displayName: "Deploy to Prod"
+    dependsOn: DeployStage
+    condition: succeeded()
+    variables:
+      environment: prod
+      namespace: app
+    jobs:
+      - deployment: DeployAppProd
+        displayName: "Deploy 3-tier app (prod)"
+        environment: prod
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/database
+                    releaseName: database
+                    namespace: $(namespace)
+                    valuesFile: helm/charts/database/values-prod.yaml
+                    environment: $(environment)
+
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/backend
+                    releaseName: backend
+                    namespace: $(namespace)
+                    valuesFile: helm/charts/backend/values-prod.yaml
+                    overrideValues: "image.tag=$(imageTag)"
+                    environment: $(environment)
+
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/frontend
+                    releaseName: frontend
+                    namespace: $(namespace)
+                    valuesFile: helm/charts/frontend/values-prod.yaml
+                    overrideValues: "image.tag=$(imageTag)"
+                    environment: $(environment)
+
+                - template: templates/deploy-helm.yml
+                  parameters:
+                    chartPath: helm/charts/airflow
+                    releaseName: airflow
+                    namespace: airflow
+                    valuesFile: helm/charts/airflow/values-prod.yaml
+                    environment: $(environment)
